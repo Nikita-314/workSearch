@@ -11,6 +11,7 @@ from app.bot.keyboards.search import (
     schedule_keyboard,
 )
 from app.bot.states.user_search import UserSearchStates
+from app.bot.keyboards.offers import offer_keyboard
 
 router = Router()
 
@@ -137,7 +138,10 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
             "Показываю похожие вакансии по выбранному направлению ✅\n"
         )
 
-    response_lines = [intro_text, ""]
+        await message.answer(
+        intro_text,
+        reply_markup=ReplyKeyboardRemove(),
+    )
 
     for offer in offers:
         log_event(
@@ -148,18 +152,20 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
             match_type=match_type,
         )
 
-        response_lines.append(
+        offer_text = (
             f"<b>{offer['title']}</b>\n"
             f"Город: {offer['city']}\n"
             f"График: {offer['schedule']}\n"
             f"Зарплата: {offer['salary']}\n"
-            f"{offer['description']}\n"
-            f"Ссылка: {offer['url']}\n"
+            f"{offer['description']}"
         )
 
-    await message.answer(
-        "\n".join(response_lines),
-        reply_markup=ReplyKeyboardRemove(),
-    )
+        await message.answer(
+            offer_text,
+            reply_markup=offer_keyboard(
+                offer_id=offer["id"],
+                url=offer["url"],
+            ),
+        )
 
     await state.clear()
