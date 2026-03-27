@@ -118,7 +118,29 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
             schedule=data["schedule"],
         )
 
-            await message.answer(
+        await message.answer(
+            "По твоему запросу пока нет подходящих вакансий 😔\n\n"
+            "Попробуй ещё раз через кнопку или команду /search",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        await state.clear()
+        return
+
+    # 👇 ВАЖНО: тут отступ ровно 4 пробела
+    if match_type == "exact":
+        intro_text = "Найдены точные совпадения ✅\n"
+    elif match_type == "city_job_type":
+        intro_text = (
+            "Точных совпадений по графику не нашлось.\n"
+            "Но я нашёл похожие вакансии в твоём городе ✅\n"
+        )
+    else:
+        intro_text = (
+            "Точных совпадений в твоём городе не нашлось.\n"
+            "Показываю похожие вакансии по выбранному направлению ✅\n"
+        )
+
+    await message.answer(
         intro_text,
         reply_markup=ReplyKeyboardRemove(),
     )
@@ -148,50 +170,6 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
         await message.answer(
             offer_text,
             reply_markup=offer_keyboard(offer_url=tracked_url),
-        )
-        return
-
-    if match_type == "exact":
-        intro_text = "Найдены точные совпадения ✅\n"
-    elif match_type == "city_job_type":
-        intro_text = (
-            "Точных совпадений по графику не нашлось.\n"
-            "Но я нашёл похожие вакансии в твоём городе ✅\n"
-        )
-    else:
-        intro_text = (
-            "Точных совпадений в твоём городе не нашлось.\n"
-            "Показываю похожие вакансии по выбранному направлению ✅\n"
-        )
-
-        await message.answer(
-        intro_text,
-        reply_markup=ReplyKeyboardRemove(),
-    )
-
-    for offer in offers:
-        log_event(
-            event_name="offer_shown",
-            user_id=message.from_user.id,
-            offer_id=offer["id"],
-            title=offer["title"],
-            match_type=match_type,
-        )
-
-        offer_text = (
-            f"<b>{offer['title']}</b>\n"
-            f"Город: {offer['city']}\n"
-            f"График: {offer['schedule']}\n"
-            f"Зарплата: {offer['salary']}\n"
-            f"{offer['description']}"
-        )
-
-        await message.answer(
-            offer_text,
-            reply_markup=offer_keyboard(
-                offer_id=offer["id"],
-                url=offer["url"],
-            ),
         )
 
     await state.clear()
