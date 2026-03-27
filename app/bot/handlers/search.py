@@ -172,7 +172,7 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
         reply_markup=ReplyKeyboardRemove(),
     )
 
-    for offer in offers:
+        for offer in offers:
         log_event(
             event_name="offer_shown",
             user_id=message.from_user.id,
@@ -181,9 +181,10 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
             match_type=match_type,
         )
 
-                tracked_url = build_offer_tracking_link(
+        await send_offer_photos(message, offer)
+
+        tracked_url = build_offer_tracking_link(
             offer_id=offer["id"],
-            await send_offer_photos(message, offer)
             user_id=message.from_user.id,
         )
 
@@ -204,5 +205,5 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
                 offer_url=tracked_url,
             ),
         )
-
+        
     await state.clear()
