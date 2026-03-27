@@ -39,11 +39,23 @@ OFFERS = [
         "description": "Удалённая работа из дома.",
         "url": "https://example.com/offer/4",
     },
+    {
+        "id": 5,
+        "title": "Курьер в Санкт-Петербурге",
+        "city": "Санкт-Петербург",
+        "job_type": "Курьер",
+        "schedule": "Полный день",
+        "salary": "от 85 000 ₽",
+        "description": "Доставка заказов по городу, можно без опыта.",
+        "url": "https://example.com/offer/5",
+    },
 ]
 
 
-def find_matching_offers(city: str, job_type: str, schedule: str) -> list[dict]:
-    matched_offers = []
+def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[dict], str]:
+    exact_matches = []
+    city_job_type_matches = []
+    job_type_matches = []
 
     for offer in OFFERS:
         if (
@@ -51,10 +63,23 @@ def find_matching_offers(city: str, job_type: str, schedule: str) -> list[dict]:
             and offer["job_type"] == job_type
             and offer["schedule"] == schedule
         ):
-            matched_offers.append(offer)
+            exact_matches.append(offer)
 
-    return matched_offers
-    
+    if exact_matches:
+        return exact_matches, "exact"
 
+    for offer in OFFERS:
+        if offer["city"] == city and offer["job_type"] == job_type:
+            city_job_type_matches.append(offer)
 
-    
+    if city_job_type_matches:
+        return city_job_type_matches, "city_job_type"
+
+    for offer in OFFERS:
+        if offer["job_type"] == job_type:
+            job_type_matches.append(offer)
+
+    if job_type_matches:
+        return job_type_matches, "job_type_only"
+
+    return [], "none"

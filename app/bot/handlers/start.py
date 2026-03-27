@@ -1,7 +1,9 @@
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
+
 from app.analytics.events import log_event
+from app.bot.keyboards.common import start_keyboard
 
 router = Router()
 
@@ -13,12 +15,10 @@ async def start_handler(message: Message) -> None:
         user_id=message.from_user.id,
         username=message.from_user.username,
     )
-    
+
     await message.answer(
         "Привет 👋\n\n"
-        "Я помогу подобрать подходящую вакансию.\n"
-        "Нажми команду /search, чтобы начать подбор."
+        "Я помогу подобрать подходящую вакансию.",
+        reply_markup=start_keyboard(),
     )
-
-
 
