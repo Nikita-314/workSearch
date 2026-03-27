@@ -9,5 +9,6 @@ router = Router()
 async def start_handler(message: Message) -> None:
     await message.answer(
         "Привет 👋\n\n"
-        "Я помогу подобрать подходящую вакансию."
+        "Я помогу подобрать подходящую вакансию.\n"
+        "Нажми команду /search, чтобы начать подбор."
     )
