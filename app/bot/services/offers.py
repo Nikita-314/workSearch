@@ -10,6 +10,15 @@ def load_offers() -> list[dict]:
         return json.load(file)
 
 
+def city_matches(offer_city: str, selected_city: str) -> bool:
+    return offer_city == selected_city or offer_city == "all"
+
+
+def find_offer_by_id(offer_id: int) -> dict | None:
+    offers = load_offers()
+    return next((offer for offer in offers if offer["id"] == offer_id), None)
+
+
 def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[dict], str]:
     offers = load_offers()
 
@@ -19,7 +28,7 @@ def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[
 
     for offer in offers:
         if (
-            offer["city"] == city
+            city_matches(offer["city"], city)
             and offer["job_type"] == job_type
             and offer["schedule"] == schedule
         ):
@@ -29,7 +38,7 @@ def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[
         return exact_matches, "exact"
 
     for offer in offers:
-        if offer["city"] == city and offer["job_type"] == job_type:
+        if city_matches(offer["city"], city) and offer["job_type"] == job_type:
             city_job_type_matches.append(offer)
 
     if city_job_type_matches:

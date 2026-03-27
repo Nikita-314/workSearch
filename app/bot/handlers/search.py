@@ -13,6 +13,9 @@ from app.bot.keyboards.search import (
 from app.bot.states.user_search import UserSearchStates
 from app.bot.keyboards.offers import offer_keyboard
 from app.bot.services.tracking import build_offer_tracking_link
+from pathlib import Path
+from aiogram.types import FSInputFile, InputMediaPhoto, ReplyKeyboardRemove
+
 
 router = Router()
 
@@ -79,6 +82,30 @@ async def process_job_type(message: Message, state: FSMContext) -> None:
         "Какой график тебе нужен?",
         reply_markup=schedule_keyboard(),
     )
+
+async def send_offer_photos(message: Message, offer: dict) -> None:
+    images = offer.get("images", [])
+
+    if not images:
+        return
+
+    resolved_paths = [Path(image_path) for image_path in images if Path(image_path).exists()]
+
+    if not resolved_paths:
+        return
+
+    if len(resolved_paths) == 1:
+        await message.answer_photo(
+            photo=FSInputFile(resolved_paths[0]),
+        )
+        return
+
+    media_group = [
+        InputMediaPhoto(media=FSInputFile(path))
+        for path in resolved_paths
+    ]
+
+    await message.answer_media_group(media_group)
 
 
 @router.message(UserSearchStates.choosing_schedule)
@@ -154,22 +181,28 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
             match_type=match_type,
         )
 
-        tracked_url = build_offer_tracking_link(
+                tracked_url = build_offer_tracking_link(
             offer_id=offer["id"],
+            await send_offer_photos(message, offer)
             user_id=message.from_user.id,
         )
 
+        city_label = "Все города" if offer["city"] == "all" else offer["city"]
+
         offer_text = (
             f"<b>{offer['title']}</b>\n"
-            f"Город: {offer['city']}\n"
+            f"Город: {city_label}\n"
             f"График: {offer['schedule']}\n"
-            f"Зарплата: {offer['salary']}\n"
-            f"{offer['description']}"
+            f"Зарплата: {offer['salary']}\n\n"
+            f"{offer.get('short_description', 'Описание пока не добавлено.')}"
         )
 
         await message.answer(
             offer_text,
-            reply_markup=offer_keyboard(offer_url=tracked_url),
+            reply_markup=offer_keyboard(
+                offer_id=offer["id"],
+                offer_url=tracked_url,
+            ),
         )
 
     await state.clear()
