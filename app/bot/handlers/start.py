@@ -1,10 +1,13 @@
 from aiogram import Router
-from aiogram.types import Message
 from aiogram.filters import CommandStart
+from aiogram.types import Message
 
 router = Router()
 
 
 @router.message(CommandStart())
-async def start_handler(message: Message):
-    await message.answer("Привет! Я бот по подбору работы 🚀")
+async def start_handler(message: Message) -> None:
+    await message.answer(
+        "Привет 👋\n\n"
+        "Я помогу подобрать подходящую вакансию."
+    )

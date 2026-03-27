@@ -4,13 +4,11 @@ from app.bot.bot import bot, dp
 from app.bot.handlers import routers
 
 
-async def main():
-    # подключаем роутеры
+async def main() -> None:
     for router in routers:
         dp.include_router(router)
 
-    print("Bot started 🚀")
-
+    print("Bot started")
     await dp.start_polling(bot)
 
 
