@@ -12,6 +12,7 @@ from app.bot.keyboards.search import (
 )
 from app.bot.states.user_search import UserSearchStates
 from app.bot.keyboards.offers import offer_keyboard
+from app.bot.services.tracking import build_offer_tracking_link
 
 router = Router()
 
@@ -117,12 +118,37 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
             schedule=data["schedule"],
         )
 
-        await message.answer(
-            "По твоему запросу пока нет подходящих вакансий 😔\n\n"
-            "Попробуй ещё раз через кнопку или команду /search",
-            reply_markup=ReplyKeyboardRemove(),
+            await message.answer(
+        intro_text,
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    for offer in offers:
+        log_event(
+            event_name="offer_shown",
+            user_id=message.from_user.id,
+            offer_id=offer["id"],
+            title=offer["title"],
+            match_type=match_type,
         )
-        await state.clear()
+
+        tracked_url = build_offer_tracking_link(
+            offer_id=offer["id"],
+            user_id=message.from_user.id,
+        )
+
+        offer_text = (
+            f"<b>{offer['title']}</b>\n"
+            f"Город: {offer['city']}\n"
+            f"График: {offer['schedule']}\n"
+            f"Зарплата: {offer['salary']}\n"
+            f"{offer['description']}"
+        )
+
+        await message.answer(
+            offer_text,
+            reply_markup=offer_keyboard(offer_url=tracked_url),
+        )
         return
 
     if match_type == "exact":

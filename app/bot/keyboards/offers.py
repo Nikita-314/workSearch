@@ -1,20 +1,14 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def offer_keyboard(offer_id: int, url: str) -> InlineKeyboardMarkup:
+def offer_keyboard(offer_url: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text="Открыть вакансию",
-                    callback_data=f"offer_click:{offer_id}",
+                    url=offer_url,
                 )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="Перейти по ссылке",
-                    url=url,
-                )
-            ],
+            ]
         ]
     )
