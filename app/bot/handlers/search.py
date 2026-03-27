@@ -147,13 +147,12 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
 
         await message.answer(
             "По твоему запросу пока нет подходящих вакансий 😔\n\n"
-            "Попробуй ещё раз через кнопку или команду /search",
+            "Попробуй ещё раз через /search",
             reply_markup=ReplyKeyboardRemove(),
         )
         await state.clear()
         return
 
-    # 👇 ВАЖНО: тут отступ ровно 4 пробела
     if match_type == "exact":
         intro_text = "Найдены точные совпадения ✅\n"
     elif match_type == "city_job_type":
@@ -172,7 +171,7 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
         reply_markup=ReplyKeyboardRemove(),
     )
 
-            for offer in offers:
+    for offer in offers:
         log_event(
             event_name="offer_shown",
             user_id=message.from_user.id,
