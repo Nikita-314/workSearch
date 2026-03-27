@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 from app.bot.services.offers import find_matching_offers
+from app.analytics.events import log_event
 
 from app.bot.keyboards.search import (
     city_keyboard,
@@ -16,6 +17,12 @@ router = Router()
 
 @router.message(Command("search"))
 async def start_search(message: Message, state: FSMContext) -> None:
+    log_event(
+        event_name="quiz_started",
+        user_id=message.from_user.id,
+        username=message.from_user.username,
+    )
+
     await state.set_state(UserSearchStates.choosing_city)
     await message.answer(
         "Давай подберём вакансию.\n\nВыбери город:",
@@ -26,6 +33,13 @@ async def start_search(message: Message, state: FSMContext) -> None:
 @router.message(UserSearchStates.choosing_city)
 async def process_city(message: Message, state: FSMContext) -> None:
     await state.update_data(city=message.text)
+
+    log_event(
+        event_name="city_selected",
+        user_id=message.from_user.id,
+        city=message.text,
+    )
+
     await state.set_state(UserSearchStates.choosing_job_type)
     await message.answer(
         "Хорошо. Теперь выбери тип работы:",
@@ -36,6 +50,13 @@ async def process_city(message: Message, state: FSMContext) -> None:
 @router.message(UserSearchStates.choosing_job_type)
 async def process_job_type(message: Message, state: FSMContext) -> None:
     await state.update_data(job_type=message.text)
+
+    log_event(
+        event_name="job_type_selected",
+        user_id=message.from_user.id,
+        job_type=message.text,
+    )
+
     await state.set_state(UserSearchStates.choosing_schedule)
     await message.answer(
         "Какой график тебе нужен?",
@@ -47,6 +68,12 @@ async def process_job_type(message: Message, state: FSMContext) -> None:
 async def process_schedule(message: Message, state: FSMContext) -> None:
     await state.update_data(schedule=message.text)
 
+    log_event(
+        event_name="schedule_selected",
+        user_id=message.from_user.id,
+        schedule=message.text,
+    )
+
     data = await state.get_data()
 
     offers = find_matching_offers(
@@ -55,7 +82,24 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
         schedule=data["schedule"],
     )
 
+    log_event(
+        event_name="quiz_completed",
+        user_id=message.from_user.id,
+        city=data["city"],
+        job_type=data["job_type"],
+        schedule=data["schedule"],
+        offers_found=len(offers),
+    )
+
     if not offers:
+        log_event(
+            event_name="no_offers_found",
+            user_id=message.from_user.id,
+            city=data["city"],
+            job_type=data["job_type"],
+            schedule=data["schedule"],
+        )
+
         await message.answer(
             "По твоему запросу пока нет подходящих вакансий 😔\n\n"
             "Попробуй ещё раз через /search",
@@ -70,6 +114,13 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
     ]
 
     for offer in offers:
+        log_event(
+            event_name="offer_shown",
+            user_id=message.from_user.id,
+            offer_id=offer["id"],
+            title=offer["title"],
+        )
+
         response_lines.append(
             f"<b>{offer['title']}</b>\n"
             f"Город: {offer['city']}\n"
