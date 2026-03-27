@@ -2,6 +2,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
+from app.bot.services.offers import find_matching_offers
 
 from app.bot.keyboards.search import (
     city_keyboard,
@@ -48,12 +49,38 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
 
     data = await state.get_data()
 
+    offers = find_matching_offers(
+        city=data["city"],
+        job_type=data["job_type"],
+        schedule=data["schedule"],
+    )
+
+    if not offers:
+        await message.answer(
+            "По твоему запросу пока нет подходящих вакансий 😔\n\n"
+            "Попробуй ещё раз через /search",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        await state.clear()
+        return
+
+    response_lines = [
+        "Найденные вакансии ✅",
+        "",
+    ]
+
+    for offer in offers:
+        response_lines.append(
+            f"<b>{offer['title']}</b>\n"
+            f"Город: {offer['city']}\n"
+            f"График: {offer['schedule']}\n"
+            f"Зарплата: {offer['salary']}\n"
+            f"{offer['description']}\n"
+            f"Ссылка: {offer['url']}\n"
+        )
+
     await message.answer(
-        "Анкета заполнена ✅\n\n"
-        f"Город: {data['city']}\n"
-        f"Тип работы: {data['job_type']}\n"
-        f"График: {data['schedule']}\n\n"
-        "Позже здесь будет подбор подходящих вакансий.",
+        "\n".join(response_lines),
         reply_markup=ReplyKeyboardRemove(),
     )
 
