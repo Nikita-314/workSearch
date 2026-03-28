@@ -175,3 +175,54 @@ def get_user_preferences(telegram_user_id: int) -> tuple | None:
         ).fetchone()
 
     return row
+
+def set_user_subscription(telegram_user_id: int, is_subscribed: bool) -> None:
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE users
+            SET is_subscribed_to_updates = ?
+            WHERE telegram_user_id = ?
+            """,
+            (1 if is_subscribed else 0, telegram_user_id),
+        )
+        conn.commit()
+
+
+def upsert_user(
+    telegram_user_id: int,
+    username: str | None,
+    first_name: str | None,
+    last_name: str | None,
+) -> None:
+    now = datetime.utcnow().isoformat()
+
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO users (
+                telegram_user_id,
+                username,
+                first_name,
+                last_name,
+                first_seen_at,
+                last_seen_at,
+                is_subscribed_to_updates
+            )
+            VALUES (?, ?, ?, ?, ?, ?, 0)
+            ON CONFLICT(telegram_user_id) DO UPDATE SET
+                username = excluded.username,
+                first_name = excluded.first_name,
+                last_name = excluded.last_name,
+                last_seen_at = excluded.last_seen_at
+            """,
+            (
+                telegram_user_id,
+                username,
+                first_name,
+                last_name,
+                now,
+                now,
+            ),
+        )
+        conn.commit()

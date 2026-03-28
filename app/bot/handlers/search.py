@@ -17,6 +17,7 @@ from pathlib import Path
 from aiogram.types import FSInputFile, InputMediaPhoto, ReplyKeyboardRemove
 from app.analytics.storage import save_offer_interaction
 from app.analytics.storage import save_offer_interaction, save_user_preferences
+from app.bot.keyboards.common import subscription_keyboard
 
 
 router = Router()
@@ -159,6 +160,11 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
             "Попробуй ещё раз через /search",
             reply_markup=ReplyKeyboardRemove(),
         )
+        await message.answer(
+            "Хочешь, я буду присылать новые подходящие вакансии?",
+            reply_markup=subscription_keyboard(),
+        )
+        
         await state.clear()
         return
 

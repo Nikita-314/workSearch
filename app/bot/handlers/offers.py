@@ -4,6 +4,8 @@ from aiogram.types import CallbackQuery
 from app.analytics.events import log_event
 from app.analytics.storage import save_offer_interaction
 from app.bot.services.offers import find_offer_by_id
+from app.analytics.storage import set_user_subscription
+from app.bot.keyboards.common import subscription_keyboard
 
 router = Router()
 
@@ -51,4 +53,35 @@ async def start_new_search_handler(callback: CallbackQuery) -> None:
     await callback.message.answer(
         "Чтобы начать заново, нажми /search или кнопку «Начать подбор»."
     )
+    await callback.answer()
+
+    @router.callback_query(F.data == "subscribe_yes")
+async def subscribe_yes_handler(callback: CallbackQuery) -> None:
+    set_user_subscription(
+        telegram_user_id=callback.from_user.id,
+        is_subscribed=True,
+    )
+
+    log_event(
+        event_name="subscription_enabled",
+        user_id=callback.from_user.id,
+    )
+
+    await callback.message.answer("Отлично ✅ Теперь я смогу присылать новые подходящие вакансии.")
+    await callback.answer()
+
+
+@router.callback_query(F.data == "subscribe_no")
+async def subscribe_no_handler(callback: CallbackQuery) -> None:
+    set_user_subscription(
+        telegram_user_id=callback.from_user.id,
+        is_subscribed=False,
+    )
+
+    log_event(
+        event_name="subscription_disabled",
+        user_id=callback.from_user.id,
+    )
+
+    await callback.message.answer("Хорошо, новые вакансии присылать не буду.")
     await callback.answer()
