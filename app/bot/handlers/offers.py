@@ -1,20 +1,18 @@
 from aiogram import F, Router
-from aiogram.types import CallbackQuery
-from app.analytics.events import log_event
-from app.analytics.storage import save_offer_interaction, set_user_subscription
-from app.bot.services.offers import find_offer_by_id
 from aiogram.filters import Command
-from aiogram.types import Message
-from app.analytics.storage import get_matching_subscribed_users
-from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import CallbackQuery, Message
 
+from app.analytics.events import log_event
 from app.analytics.storage import (
     get_matching_subscribed_users,
+    save_offer_interaction,
     save_outbound_notification,
+    set_user_subscription,
 )
 from app.bot.keyboards.offers import offer_keyboard
+from app.bot.services.offers import find_offer_by_id
 from app.bot.services.tracking import build_offer_tracking_link
+from app.analytics.storage import was_offer_sent
 
 router = Router()
 
@@ -100,6 +98,7 @@ async def subscribe_no_handler(callback: CallbackQuery) -> None:
     )
     await callback.answer()
 
+
 @router.message(Command("audience"))
 async def audience_preview_handler(message: Message) -> None:
     if message.from_user.id != 526213942:
@@ -121,24 +120,23 @@ async def audience_preview_handler(message: Message) -> None:
         "",
     ]
 
-    for telegram_user_id, username, city, job_type, schedule in users[:20]:
-        lines.append(
-            f"id={telegram_user_id} | @{username or 'no_username'} | {city} | {job_type} | {schedule}"
-        )
+    for telegram_user_id, username in users[:20]:
+        lines.append(f"id={telegram_user_id} | @{username or 'no_username'}")
 
     lines.append("")
     lines.append(f"Всего: {len(users)}")
 
     await message.answer("\n".join(lines))
 
+
 @router.message(Command("send_offer"))
-async def send_offer_handler(message: Message):
+async def send_offer_handler(message: Message) -> None:
     if message.from_user.id != 526213942:
         await message.answer("Нет доступа")
         return
 
     parts = message.text.split()
-    if len(parts) != 2:
+    if len(parts) != 2 or not parts[1].isdigit():
         await message.answer("Используй: /send_offer 6")
         return
 
@@ -148,6 +146,8 @@ async def send_offer_handler(message: Message):
     if not offer:
         await message.answer("Оффер не найден")
         return
+
+
 
     users = get_matching_subscribed_users(
         city=offer["city"],
@@ -162,6 +162,8 @@ async def send_offer_handler(message: Message):
     sent = 0
 
     for telegram_user_id, username in users:
+        if was_offer_sent(telegram_user_id, offer_id):
+            continue
         try:
             url = build_offer_tracking_link(
                 offer_id=offer["id"],
@@ -169,7 +171,7 @@ async def send_offer_handler(message: Message):
             )
 
             text = (
-                f"{offer['title']}\n"
+                f"<b>{offer['title']}</b>\n"
                 f"{offer['salary']}\n\n"
                 f"{offer.get('short_description', '')}"
             )
@@ -188,9 +190,26 @@ async def send_offer_handler(message: Message):
                 ),
             )
 
+            save_outbound_notification(
+                telegram_user_id=telegram_user_id,
+                offer_id=offer["id"],
+                status="sent",
+            )
             sent += 1
 
         except Exception as e:
             print("Ошибка отправки:", e)
+            save_outbound_notification(
+                telegram_user_id=telegram_user_id,
+                offer_id=offer["id"],
+                status="failed",
+            )
+
+    log_event(
+        event_name="offer_broadcast_sent",
+        user_id=message.from_user.id,
+        offer_id=offer["id"],
+        sent_count=sent,
+    )
 
     await message.answer(f"Отправлено: {sent}")

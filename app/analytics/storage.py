@@ -1,9 +1,8 @@
 import json
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import Any
-from datetime import datetime
-
 
 DB_PATH = Path(__file__).resolve().parents[1] / "data" / "analytics.db"
 
@@ -103,6 +102,7 @@ def save_event(
         )
         conn.commit()
 
+
 def save_offer_interaction(
     telegram_user_id: int,
     offer_id: int,
@@ -127,6 +127,7 @@ def save_offer_interaction(
             ),
         )
         conn.commit()
+
 
 def save_user_preferences(
     telegram_user_id: int,
@@ -163,6 +164,7 @@ def save_user_preferences(
         )
         conn.commit()
 
+
 def get_user_preferences(telegram_user_id: int) -> tuple | None:
     with get_connection() as conn:
         row = conn.execute(
@@ -175,6 +177,7 @@ def get_user_preferences(telegram_user_id: int) -> tuple | None:
         ).fetchone()
 
     return row
+
 
 def set_user_subscription(telegram_user_id: int, is_subscribed: bool) -> None:
     with get_connection() as conn:
@@ -227,58 +230,39 @@ def upsert_user(
         )
         conn.commit()
 
-def get_matching_subscribed_users(city: str, job_type: str, schedule: str) -> list[tuple]:
-    with get_connection() as conn:
-        rows = conn.execute(
-            """
-            SELECT u.telegram_user_id, u.username, p.city, p.job_type, p.schedule
-            FROM users u
-            JOIN user_preferences p
-              ON u.telegram_user_id = p.telegram_user_id
-            WHERE u.is_subscribed_to_updates = 1
-              AND p.job_type = ?
-              AND (p.city = ? OR p.city = 'all')
-              AND (p.schedule = ? OR p.schedule = 'Гибкий график' OR p.schedule = 'Подработка')
-            ORDER BY p.updated_at DESC
-            """
-            ,
-            (job_type, city, schedule),
-        ).fetchall()
-
-    return rows
-
-
-def get_offer_by_id_from_db_safe(offer_id: int) -> dict | None:
-    from app.bot.services.offers import load_offers
-
-    offers = load_offers()
-    return next((offer for offer in offers if offer["id"] == offer_id), None)
 
 def get_matching_subscribed_users(city: str, job_type: str, schedule: str):
     with get_connection() as conn:
-        rows = conn.execute(
-            """
+        query = """
             SELECT u.telegram_user_id, u.username
             FROM users u
             JOIN user_preferences p
               ON u.telegram_user_id = p.telegram_user_id
             WHERE u.is_subscribed_to_updates = 1
-              AND p.city = ?
               AND p.job_type = ?
-              AND p.schedule = ?
-            """,
-            (city, job_type, schedule),
-        ).fetchall()
+        """
+        params = [job_type]
+
+        if city != "all":
+            query += " AND p.city = ?"
+            params.append(city)
+
+        if schedule == "Гибкий график":
+            query += " AND p.schedule IN ('Гибкий график', 'Подработка')"
+        else:
+            query += " AND p.schedule = ?"
+            params.append(schedule)
+
+        rows = conn.execute(query, tuple(params)).fetchall()
 
     return rows
+
 
 def save_outbound_notification(
     telegram_user_id: int,
     offer_id: int,
     status: str,
 ) -> None:
-    from datetime import datetime
-
     with get_connection() as conn:
         conn.execute(
             """
@@ -298,3 +282,19 @@ def save_outbound_notification(
             ),
         )
         conn.commit()
+
+def was_offer_sent(telegram_user_id: int, offer_id: int) -> bool:
+    with get_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT 1
+            FROM outbound_notifications
+            WHERE telegram_user_id = ?
+              AND offer_id = ?
+              AND status = 'sent'
+            LIMIT 1
+            """,
+            (telegram_user_id, offer_id),
+        ).fetchone()
+
+    return row is not None
