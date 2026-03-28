@@ -226,3 +226,30 @@ def upsert_user(
             ),
         )
         conn.commit()
+
+def get_matching_subscribed_users(city: str, job_type: str, schedule: str) -> list[tuple]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT u.telegram_user_id, u.username, p.city, p.job_type, p.schedule
+            FROM users u
+            JOIN user_preferences p
+              ON u.telegram_user_id = p.telegram_user_id
+            WHERE u.is_subscribed_to_updates = 1
+              AND p.job_type = ?
+              AND (p.city = ? OR p.city = 'all')
+              AND (p.schedule = ? OR p.schedule = 'Гибкий график' OR p.schedule = 'Подработка')
+            ORDER BY p.updated_at DESC
+            """
+            ,
+            (job_type, city, schedule),
+        ).fetchall()
+
+    return rows
+
+
+def get_offer_by_id_from_db_safe(offer_id: int) -> dict | None:
+    from app.bot.services.offers import load_offers
+
+    offers = load_offers()
+    return next((offer for offer in offers if offer["id"] == offer_id), None)

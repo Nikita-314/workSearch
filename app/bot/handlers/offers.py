@@ -1,9 +1,11 @@
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
-
 from app.analytics.events import log_event
 from app.analytics.storage import save_offer_interaction, set_user_subscription
 from app.bot.services.offers import find_offer_by_id
+from aiogram.filters import Command
+from aiogram.types import Message
+from app.analytics.storage import get_matching_subscribed_users
 
 router = Router()
 
@@ -88,3 +90,34 @@ async def subscribe_no_handler(callback: CallbackQuery) -> None:
         "Хорошо, новые вакансии присылать не буду."
     )
     await callback.answer()
+
+@router.message(Command("audience"))
+async def audience_preview_handler(message: Message) -> None:
+    if message.from_user.id != 526213942:
+        await message.answer("Эта команда только для администратора.")
+        return
+
+    users = get_matching_subscribed_users(
+        city="Санкт-Петербург",
+        job_type="Курьер",
+        schedule="Подработка",
+    )
+
+    if not users:
+        await message.answer("Подписанных пользователей под этот оффер пока нет.")
+        return
+
+    lines = [
+        "Найдены подходящие подписанные пользователи:",
+        "",
+    ]
+
+    for telegram_user_id, username, city, job_type, schedule in users[:20]:
+        lines.append(
+            f"id={telegram_user_id} | @{username or 'no_username'} | {city} | {job_type} | {schedule}"
+        )
+
+    lines.append("")
+    lines.append(f"Всего: {len(users)}")
+
+    await message.answer("\n".join(lines))
