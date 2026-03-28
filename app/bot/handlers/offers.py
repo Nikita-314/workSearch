@@ -2,10 +2,8 @@ from aiogram import F, Router
 from aiogram.types import CallbackQuery
 
 from app.analytics.events import log_event
-from app.analytics.storage import save_offer_interaction
+from app.analytics.storage import save_offer_interaction, set_user_subscription
 from app.bot.services.offers import find_offer_by_id
-from app.analytics.storage import set_user_subscription
-from app.bot.keyboards.common import subscription_keyboard
 
 router = Router()
 
@@ -55,7 +53,8 @@ async def start_new_search_handler(callback: CallbackQuery) -> None:
     )
     await callback.answer()
 
-    @router.callback_query(F.data == "subscribe_yes")
+
+@router.callback_query(F.data == "subscribe_yes")
 async def subscribe_yes_handler(callback: CallbackQuery) -> None:
     set_user_subscription(
         telegram_user_id=callback.from_user.id,
@@ -67,7 +66,9 @@ async def subscribe_yes_handler(callback: CallbackQuery) -> None:
         user_id=callback.from_user.id,
     )
 
-    await callback.message.answer("Отлично ✅ Теперь я смогу присылать новые подходящие вакансии.")
+    await callback.message.answer(
+        "Отлично ✅ Теперь я смогу присылать новые подходящие вакансии."
+    )
     await callback.answer()
 
 
@@ -83,5 +84,7 @@ async def subscribe_no_handler(callback: CallbackQuery) -> None:
         user_id=callback.from_user.id,
     )
 
-    await callback.message.answer("Хорошо, новые вакансии присылать не буду.")
+    await callback.message.answer(
+        "Хорошо, новые вакансии присылать не буду."
+    )
     await callback.answer()
