@@ -253,3 +253,21 @@ def get_offer_by_id_from_db_safe(offer_id: int) -> dict | None:
 
     offers = load_offers()
     return next((offer for offer in offers if offer["id"] == offer_id), None)
+
+def get_matching_subscribed_users(city: str, job_type: str, schedule: str):
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT u.telegram_user_id, u.username
+            FROM users u
+            JOIN user_preferences p
+              ON u.telegram_user_id = p.telegram_user_id
+            WHERE u.is_subscribed_to_updates = 1
+              AND p.city = ?
+              AND p.job_type = ?
+              AND p.schedule = ?
+            """,
+            (city, job_type, schedule),
+        ).fetchall()
+
+    return rows

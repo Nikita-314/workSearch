@@ -6,6 +6,15 @@ from app.bot.services.offers import find_offer_by_id
 from aiogram.filters import Command
 from aiogram.types import Message
 from app.analytics.storage import get_matching_subscribed_users
+from aiogram.filters import Command
+from aiogram.types import Message
+
+from app.analytics.storage import (
+    get_matching_subscribed_users,
+    save_outbound_notification,
+)
+from app.bot.keyboards.offers import offer_keyboard
+from app.bot.services.tracking import build_offer_tracking_link
 
 router = Router()
 
@@ -121,3 +130,67 @@ async def audience_preview_handler(message: Message) -> None:
     lines.append(f"Всего: {len(users)}")
 
     await message.answer("\n".join(lines))
+
+@router.message(Command("send_offer"))
+async def send_offer_handler(message: Message):
+    if message.from_user.id != 526213942:
+        await message.answer("Нет доступа")
+        return
+
+    parts = message.text.split()
+    if len(parts) != 2:
+        await message.answer("Используй: /send_offer 6")
+        return
+
+    offer_id = int(parts[1])
+    offer = find_offer_by_id(offer_id)
+
+    if not offer:
+        await message.answer("Оффер не найден")
+        return
+
+    users = get_matching_subscribed_users(
+        city=offer["city"],
+        job_type=offer["job_type"],
+        schedule=offer["schedule"],
+    )
+
+    if not users:
+        await message.answer("Нет подходящих пользователей")
+        return
+
+    sent = 0
+
+    for telegram_user_id, username in users:
+        try:
+            url = build_offer_tracking_link(
+                offer_id=offer["id"],
+                user_id=telegram_user_id,
+            )
+
+            text = (
+                f"{offer['title']}\n"
+                f"{offer['salary']}\n\n"
+                f"{offer.get('short_description', '')}"
+            )
+
+            await message.bot.send_message(
+                chat_id=telegram_user_id,
+                text="Новая вакансия 👇",
+            )
+
+            await message.bot.send_message(
+                chat_id=telegram_user_id,
+                text=text,
+                reply_markup=offer_keyboard(
+                    offer_id=offer["id"],
+                    offer_url=url,
+                ),
+            )
+
+            sent += 1
+
+        except Exception as e:
+            print("Ошибка отправки:", e)
+
+    await message.answer(f"Отправлено: {sent}")
