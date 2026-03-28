@@ -121,7 +121,7 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
     )
 
     data = await state.get_data()
-    save user preferences(
+    save_user_preferences(
         telegram_user_id=message.from_user.id,
         city=data["city"],
         job_type=data["job_type"],
