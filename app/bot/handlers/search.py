@@ -15,6 +15,7 @@ from app.bot.keyboards.offers import offer_keyboard
 from app.bot.services.tracking import build_offer_tracking_link
 from pathlib import Path
 from aiogram.types import FSInputFile, InputMediaPhoto, ReplyKeyboardRemove
+from app.analytics.storage import save_offer_interaction
 
 
 router = Router()
@@ -58,6 +59,11 @@ async def process_city(message: Message, state: FSMContext) -> None:
         event_name="city_selected",
         user_id=message.from_user.id,
         city=message.text,
+    )
+    save_offer_interaction(
+        telegram_user_id=message.from_user.id,
+        offer_id=offer["id"],
+        interaction_type="shown",
     )
 
     await state.set_state(UserSearchStates.choosing_job_type)

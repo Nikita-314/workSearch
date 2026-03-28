@@ -3,6 +3,7 @@ from aiogram.types import CallbackQuery
 
 from app.analytics.events import log_event
 from app.bot.services.offers import find_offer_by_id
+from app.analytics.storage import save_offer_interaction
 
 router = Router()
 
@@ -11,6 +12,12 @@ router = Router()
 async def offer_details_handler(callback: CallbackQuery) -> None:
     offer_id = int(callback.data.split(":")[1])
     offer = find_offer_by_id(offer_id)
+
+    save_offer_interaction(
+    telegram_user_id=callback.from_user.id,
+    offer_id=offer_id,
+    interaction_type="details_opened",
+)
 
     if not offer:
         await callback.answer("Вакансия не найдена", show_alert=True)
@@ -21,7 +28,7 @@ async def offer_details_handler(callback: CallbackQuery) -> None:
         user_id=callback.from_user.id,
         offer_id=offer_id,
         title=offer["title"],
-    )
+    
 
     full_description = offer.get("full_description") or "Подробное описание пока не добавлено."
 
