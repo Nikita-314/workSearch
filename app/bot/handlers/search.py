@@ -173,13 +173,13 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
     )
 
     for offer in offers:
-    log_event(
-        event_name="offer_shown",
-        user_id=message.from_user.id,
-        offer_id=offer["id"],
-        title=offer["title"],
-        match_type=match_type,
-    )
+        log_event(
+            event_name="offer_shown",
+            user_id=message.from_user.id,
+            offer_id=offer["id"],
+            title=offer["title"],
+            match_type=match_type,
+        )
 
     save_offer_interaction(
         telegram_user_id=message.from_user.id,
