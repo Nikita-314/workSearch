@@ -60,11 +60,6 @@ async def process_city(message: Message, state: FSMContext) -> None:
         user_id=message.from_user.id,
         city=message.text,
     )
-    save_offer_interaction(
-        telegram_user_id=message.from_user.id,
-        offer_id=offer["id"],
-        interaction_type="shown",
-    )
 
     await state.set_state(UserSearchStates.choosing_job_type)
     await message.answer(
@@ -178,37 +173,42 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
     )
 
     for offer in offers:
-        log_event(
-            event_name="offer_shown",
-            user_id=message.from_user.id,
+    log_event(
+        event_name="offer_shown",
+        user_id=message.from_user.id,
+        offer_id=offer["id"],
+        title=offer["title"],
+        match_type=match_type,
+    )
+
+    save_offer_interaction(
+        telegram_user_id=message.from_user.id,
+        offer_id=offer["id"],
+        interaction_type="shown",
+    )
+
+    await send_offer_photos(message, offer)
+
+    tracked_url = build_offer_tracking_link(
+        offer_id=offer["id"],
+        user_id=message.from_user.id,
+    )
+
+    city_label = "Все города" if offer["city"] == "all" else offer["city"]
+
+    offer_text = (
+        f"<b>{offer['title']}</b>\n"
+        f"Город: {city_label}\n"
+        f"График: {offer['schedule']}\n"
+        f"Зарплата: {offer['salary']}\n\n"
+        f"{offer.get('short_description', 'Описание пока не добавлено.')}"
+    )
+
+    await message.answer(
+        offer_text,
+        reply_markup=offer_keyboard(
             offer_id=offer["id"],
-            title=offer["title"],
-            match_type=match_type,
-        )
-
-        await send_offer_photos(message, offer)
-
-        tracked_url = build_offer_tracking_link(
-            offer_id=offer["id"],
-            user_id=message.from_user.id,
-        )
-
-        city_label = "Все города" if offer["city"] == "all" else offer["city"]
-
-        offer_text = (
-            f"<b>{offer['title']}</b>\n"
-            f"Город: {city_label}\n"
-            f"График: {offer['schedule']}\n"
-            f"Зарплата: {offer['salary']}\n\n"
-            f"{offer.get('short_description', 'Описание пока не добавлено.')}"
-        )
-
-        await message.answer(
-            offer_text,
-            reply_markup=offer_keyboard(
-                offer_id=offer["id"],
-                offer_url=tracked_url,
-            ),
-        )
-
+            offer_url=tracked_url,
+        ),
+    )
     await state.clear()
