@@ -271,3 +271,30 @@ def get_matching_subscribed_users(city: str, job_type: str, schedule: str):
         ).fetchall()
 
     return rows
+
+def save_outbound_notification(
+    telegram_user_id: int,
+    offer_id: int,
+    status: str,
+) -> None:
+    from datetime import datetime
+
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO outbound_notifications (
+                telegram_user_id,
+                offer_id,
+                sent_at,
+                status
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                telegram_user_id,
+                offer_id,
+                datetime.utcnow().isoformat(),
+                status,
+            ),
+        )
+        conn.commit()
