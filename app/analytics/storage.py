@@ -127,3 +127,51 @@ def save_offer_interaction(
             ),
         )
         conn.commit()
+
+def save_user_preferences(
+    telegram_user_id: int,
+    city: str,
+    job_type: str,
+    schedule: str,
+) -> None:
+    now = datetime.utcnow().isoformat()
+
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO user_preferences (
+                telegram_user_id,
+                city,
+                job_type,
+                schedule,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(telegram_user_id) DO UPDATE SET
+                city = excluded.city,
+                job_type = excluded.job_type,
+                schedule = excluded.schedule,
+                updated_at = excluded.updated_at
+            """,
+            (
+                telegram_user_id,
+                city,
+                job_type,
+                schedule,
+                now,
+            ),
+        )
+        conn.commit()
+
+def get_user_preferences(telegram_user_id: int) -> tuple | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT city, job_type, schedule, updated_at
+            FROM user_preferences
+            WHERE telegram_user_id = ?
+            """,
+            (telegram_user_id,),
+        ).fetchone()
+
+    return row

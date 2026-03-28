@@ -16,6 +16,7 @@ from app.bot.services.tracking import build_offer_tracking_link
 from pathlib import Path
 from aiogram.types import FSInputFile, InputMediaPhoto, ReplyKeyboardRemove
 from app.analytics.storage import save_offer_interaction
+from app.analytics.storage import save_offer_interaction, save_user_preferences
 
 
 router = Router()
@@ -120,6 +121,13 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
     )
 
     data = await state.get_data()
+    save user preferences(
+        telegram_user_id=message.from_user.id,
+        city=data["city"],
+        job_type=data["job_type"],
+        schedule=data["schedule"],
+    )
+
 
     offers, match_type = find_matching_offers(
         city=data["city"],
