@@ -11,13 +11,13 @@ router = APIRouter()
 async def redirect_to_offer(offer_id: int, user_id: int | None = None):
     offers = load_offers()
     offer = next((item for item in offers if item["id"] == offer_id), None)
-    
+
     if user_id is not None:
-    save_offer_interaction(
-        telegram_user_id=user_id,
-        offer_id=offer_id,
-        interaction_type="redirected",
-    )
+        save_offer_interaction(
+            telegram_user_id=user_id,
+            offer_id=offer_id,
+            interaction_type="clicked",
+        )
 
     if not offer:
         raise HTTPException(status_code=404, detail="Offer not found")
