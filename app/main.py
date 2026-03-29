@@ -1,7 +1,7 @@
 import asyncio
 
 import uvicorn
-
+from app.services.broadcast import broadcast_loop
 from app.api.app import api_app
 from app.bot.bot import bot, dp
 from app.bot.handlers import routers
@@ -35,6 +35,7 @@ async def main() -> None:
     await asyncio.gather(
         start_bot(),
         start_api(),
+        broadcast_loop(bot),
     )
 
 
