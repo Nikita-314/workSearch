@@ -13,6 +13,11 @@ from app.bot.keyboards.search import city_keyboard, job_type_keyboard, schedule_
 from app.bot.services.offers import find_matching_offers
 from app.bot.services.tracking import build_offer_tracking_link
 from app.bot.states.user_search import UserSearchStates
+from app.bot.services.offers import (
+    find_matching_offers,
+    get_city_label,
+    get_schedule_label,
+)
 
 router = Router()
 
@@ -238,8 +243,8 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
 
         offer_text = (
             f"<b>{offer['title']}</b>\n"
-            f"Город: {city_label}\n"
-            f"График: {', '.join(get_offer_schedules(offer))}\n"
+            f"Город: {get_city_label(offer)}\n"
+            f"График: {get_schedule_label(offer)}\n"
             f"Зарплата: {offer['salary']}\n\n"
             f"{offer.get('short_description') or offer.get('description', 'Описание пока не добавлено.')}"
         )
