@@ -80,7 +80,7 @@ def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[
     for offer in offers:
         if (
             city_matches(offer.get("city"), city)
-            and offer["job_type"] == job_type
+            and job_type in normalize_to_list(offer.get("job_type"))
             and schedule_matches(offer.get("schedule"), schedule)
         ):
             exact_matches.append(offer)
