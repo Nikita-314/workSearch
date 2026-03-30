@@ -18,12 +18,14 @@ def normalize_to_list(value) -> list[str]:
     return [str(value).strip()]
 
 
-def city_matches(offer_city: str, selected_city: str) -> bool:
-    return offer_city == selected_city or offer_city == "all"
+def city_matches(offer_city, selected_city: str) -> bool:
+    cities = normalize_to_list(offer_city)
+    return "all" in cities or selected_city in cities
 
 
 def schedule_matches(offer_schedule, selected_schedule: str) -> bool:
     schedules = normalize_to_list(offer_schedule)
+
     if selected_schedule in schedules:
         return True
 
@@ -39,13 +41,26 @@ def schedule_matches(offer_schedule, selected_schedule: str) -> bool:
     return False
 
 
+def get_offer_cities(offer: dict) -> list[str]:
+    return normalize_to_list(offer.get("city"))
+
+
+def get_city_label(offer: dict) -> str:
+    cities = get_offer_cities(offer)
+    if not cities:
+        return "Не указан"
+    if "all" in cities:
+        return "Все города"
+    return ", ".join(cities)
+
+
 def get_offer_schedules(offer: dict) -> list[str]:
     return normalize_to_list(offer.get("schedule"))
 
 
-def get_primary_schedule(offer: dict) -> str:
+def get_schedule_label(offer: dict) -> str:
     schedules = get_offer_schedules(offer)
-    return schedules[0] if schedules else "Не указан"
+    return ", ".join(schedules) if schedules else "Не указан"
 
 
 def find_offer_by_id(offer_id: int) -> dict | None:
@@ -62,7 +77,7 @@ def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[
 
     for offer in offers:
         if (
-            city_matches(offer["city"], city)
+            city_matches(offer.get("city"), city)
             and offer["job_type"] == job_type
             and schedule_matches(offer.get("schedule"), schedule)
         ):
@@ -72,7 +87,7 @@ def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[
         return exact_matches, "exact"
 
     for offer in offers:
-        if city_matches(offer["city"], city) and offer["job_type"] == job_type:
+        if city_matches(offer.get("city"), city) and offer["job_type"] == job_type:
             city_job_type_matches.append(offer)
 
     if city_job_type_matches:
