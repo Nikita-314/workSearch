@@ -1,5 +1,5 @@
 from pathlib import Path
-
+from app.bot.services.offers import get_offer_schedules
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -239,7 +239,7 @@ async def process_schedule(message: Message, state: FSMContext) -> None:
         offer_text = (
             f"<b>{offer['title']}</b>\n"
             f"Город: {city_label}\n"
-            f"График: {offer['schedule']}\n"
+            f"График: {', '.join(get_offer_schedules(offer))}\n"
             f"Зарплата: {offer['salary']}\n\n"
             f"{offer.get('short_description') or offer.get('description', 'Описание пока не добавлено.')}"
         )

@@ -10,12 +10,21 @@ def load_offers() -> list[dict]:
         return json.load(file)
 
 
+def normalize_to_list(value) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return [str(value).strip()]
+
+
 def city_matches(offer_city: str, selected_city: str) -> bool:
     return offer_city == selected_city or offer_city == "all"
 
 
-def schedule_matches(offer_schedule: str, selected_schedule: str) -> bool:
-    if offer_schedule == selected_schedule:
+def schedule_matches(offer_schedule, selected_schedule: str) -> bool:
+    schedules = normalize_to_list(offer_schedule)
+    if selected_schedule in schedules:
         return True
 
     compatible = {
@@ -23,7 +32,20 @@ def schedule_matches(offer_schedule: str, selected_schedule: str) -> bool:
         "Подработка": {"Подработка", "Гибкий график"},
     }
 
-    return selected_schedule in compatible.get(offer_schedule, set())
+    for schedule in schedules:
+        if selected_schedule in compatible.get(schedule, set()):
+            return True
+
+    return False
+
+
+def get_offer_schedules(offer: dict) -> list[str]:
+    return normalize_to_list(offer.get("schedule"))
+
+
+def get_primary_schedule(offer: dict) -> str:
+    schedules = get_offer_schedules(offer)
+    return schedules[0] if schedules else "Не указан"
 
 
 def find_offer_by_id(offer_id: int) -> dict | None:
@@ -42,7 +64,7 @@ def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[
         if (
             city_matches(offer["city"], city)
             and offer["job_type"] == job_type
-            and schedule_matches(offer["schedule"], schedule)
+            and schedule_matches(offer.get("schedule"), schedule)
         ):
             exact_matches.append(offer)
 
