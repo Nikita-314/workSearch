@@ -18,6 +18,14 @@ def normalize_to_list(value) -> list[str]:
     return [str(value).strip()]
 
 
+def get_offer_cities(offer: dict) -> list[str]:
+    return normalize_to_list(offer.get("city"))
+
+
+def get_offer_schedules(offer: dict) -> list[str]:
+    return normalize_to_list(offer.get("schedule"))
+
+
 def city_matches(offer_city, selected_city: str) -> bool:
     cities = normalize_to_list(offer_city)
     return "all" in cities or selected_city in cities
@@ -41,10 +49,6 @@ def schedule_matches(offer_schedule, selected_schedule: str) -> bool:
     return False
 
 
-def get_offer_cities(offer: dict) -> list[str]:
-    return normalize_to_list(offer.get("city"))
-
-
 def get_city_label(offer: dict) -> str:
     cities = get_offer_cities(offer)
     if not cities:
@@ -54,13 +58,11 @@ def get_city_label(offer: dict) -> str:
     return ", ".join(cities)
 
 
-def get_offer_schedules(offer: dict) -> list[str]:
-    return normalize_to_list(offer.get("schedule"))
-
-
 def get_schedule_label(offer: dict) -> str:
     schedules = get_offer_schedules(offer)
-    return ", ".join(schedules) if schedules else "Не указан"
+    if not schedules:
+        return "Не указан"
+    return ", ".join(schedules)
 
 
 def find_offer_by_id(offer_id: int) -> dict | None:
