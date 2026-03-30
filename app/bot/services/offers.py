@@ -14,6 +14,18 @@ def city_matches(offer_city: str, selected_city: str) -> bool:
     return offer_city == selected_city or offer_city == "all"
 
 
+def schedule_matches(offer_schedule: str, selected_schedule: str) -> bool:
+    if offer_schedule == selected_schedule:
+        return True
+
+    compatible = {
+        "Гибкий график": {"Подработка", "Гибкий график"},
+        "Подработка": {"Подработка", "Гибкий график"},
+    }
+
+    return selected_schedule in compatible.get(offer_schedule, set())
+
+
 def find_offer_by_id(offer_id: int) -> dict | None:
     offers = load_offers()
     return next((offer for offer in offers if offer["id"] == offer_id), None)
@@ -30,7 +42,7 @@ def find_matching_offers(city: str, job_type: str, schedule: str) -> tuple[list[
         if (
             city_matches(offer["city"], city)
             and offer["job_type"] == job_type
-            and offer["schedule"] == schedule
+            and schedule_matches(offer["schedule"], schedule)
         ):
             exact_matches.append(offer)
 
