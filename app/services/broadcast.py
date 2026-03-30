@@ -17,7 +17,7 @@ from app.bot.services.offers import (
 from app.bot.services.tracking import build_offer_tracking_link
 
 
-CHECK_INTERVAL = 60  # каждые 60 секунд
+CHECK_INTERVAL = 60
 
 
 def pick_broadcast_city(offer: dict) -> str:
@@ -50,9 +50,7 @@ async def broadcast_loop(bot: Bot):
                     schedule=pick_broadcast_schedule(offer),
                 )
 
-                for row in users:
-                    telegram_user_id, username = row[:2]
-
+                for telegram_user_id, username in users:
                     if was_offer_sent(telegram_user_id, offer["id"]):
                         continue
 
@@ -88,14 +86,12 @@ async def broadcast_loop(bot: Bot):
                             offer_id=offer["id"],
                             status="sent",
                         )
-
                     except Exception:
                         save_outbound_notification(
                             telegram_user_id=telegram_user_id,
                             offer_id=offer["id"],
                             status="failed",
                         )
-
         except Exception as e:
             print("Broadcast error:", e)
 
